@@ -1,0 +1,4 @@
+com/edip/api/controller/DocumentController.class
+com/edip/api/service/DocumentService.class
+com/edip/api/model/DocumentMetadata.class
+com/edip/api/EdipApiApplication.class
