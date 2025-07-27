@@ -3,33 +3,38 @@ import axios from 'axios';
 
 function UploadForm() {
   const [file, setFile] = useState(null);
-  const [status, setStatus] = useState("");
+  const [result, setResult] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleUpload = async () => {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     try {
-      setStatus("Uploading...");
-      const res = await axios.post("http://localhost:8080/upload", formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const res = await axios.post("http://localhost:8000/doc/analyze", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      setStatus(`Uploaded: ${res.data}`);
+      setResult(res.data);
     } catch (err) {
-      console.error(err);
-      setStatus("Upload failed.");
+      console.error("Upload failed:", err);
+      alert("Upload failed.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type="file" onChange={e => setFile(e.target.files[0])} />
-      <button type="submit">Upload</button>
-      <p>{status}</p>
-    </form>
+    <div>
+      <h2>Upload Document</h2>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleUpload}>Upload</button>
+      {result && (
+        <pre>{JSON.stringify(result, null, 2)}</pre>
+      )}
+    </div>
   );
 }
 

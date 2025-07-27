@@ -1,13 +1,19 @@
 from fastapi import FastAPI
-from app.kafka_consumer import start_kafka_listener
+from fastapi.middleware.cors import CORSMiddleware
+from app.routes.analyze import router as analyze_router
 
-app = FastAPI()
+app = FastAPI(
+    title="EDIP ML Service",
+    description="Document Intelligence Service",
+    version="1.0.0"
+)
 
-@app.get("/")
-def root():
-    return {"message": "EDIP ML Service Running"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development; restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.on_event("startup")
-async def startup_event():
-    print("🚀 Starting Kafka listener...")
-    start_kafka_listener()
+app.include_router(analyze_router, prefix="/doc", tags=["analyze"])
