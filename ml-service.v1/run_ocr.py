@@ -1,54 +1,26 @@
-from PIL import Image
-import pytesseract
 from collections import defaultdict
-import numpy as np
 
-def run_ocr(image_path):
+def group_by_headers(blocks, y_threshold=20):
     """
-    Extracts and groups text from an architecture diagram image without hardcoding.
-    Uses Tesseract's bounding box metadata to infer section headers and structure.
+    Groups OCR-extracted blocks into headers and content based on vertical layout.
 
     Args:
-        image_path (str): Path to the image file
+        blocks (List[Dict]): Output from ocr_engine.run_ocr()
+        y_threshold (int): Minimum vertical gap (px) to treat as a new block
 
     Returns:
-        dict: A dictionary with headers as keys and list of items as values
+        dict: Header → list of child lines
     """
-    # Load image
-    img = Image.open(image_path).convert("RGB")
-    np_img = np.array(img)
-
-    # Extract word-level box data
-    ocr_data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
-
-    # Collect all text boxes
-    blocks = []
-    for i in range(len(ocr_data["text"])):
-        text = ocr_data["text"][i].strip()
-        if not text:
-            continue
-        blocks.append({
-            "text": text,
-            "left": ocr_data["left"][i],
-            "top": ocr_data["top"][i],
-            "width": ocr_data["width"][i],
-            "height": ocr_data["height"][i],
-            "line_num": ocr_data["line_num"][i],
-            "block_num": ocr_data["block_num"][i],
-            "par_num": ocr_data["par_num"][i],
-        })
-
-    # Sort top-to-bottom, left-to-right
+    # Sort blocks by Y (top), then X (left)
     blocks.sort(key=lambda b: (b["top"], b["left"]))
-
-    # Group under headers
     grouped = defaultdict(list)
     current_header = None
 
     for block in blocks:
         text = block["text"]
-        height = block["height"]
+        height = block.get("height", 0)
 
+        # Heuristic: headers are visually distinct (e.g., taller or short/capitalized text)
         is_header = (
             height > 30 or
             text.isupper() or
@@ -56,10 +28,10 @@ def run_ocr(image_path):
         )
 
         if is_header:
-            current_header = text
+            current_header = text.strip()
             if current_header not in grouped:
                 grouped[current_header] = []
         elif current_header:
-            grouped[current_header].append(text)
+            grouped[current_header].append(text.strip())
 
     return dict(grouped)

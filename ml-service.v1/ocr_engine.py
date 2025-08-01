@@ -1,4 +1,5 @@
 import pytesseract
+import numpy as np
 from PIL import Image
 
 # Optional: Set Tesseract binary location if needed
